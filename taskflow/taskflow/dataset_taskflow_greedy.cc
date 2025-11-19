@@ -168,7 +168,7 @@ int main() {
 
     // --- すべてのコアを使用　---
     unsigned int cores = std::thread::hardware_concurrency();
-    const int num_trials = std::thread::hardware_concurrency();
+    const int num_trials = 10000; // 試行回数（必要に応じて調整）
 
     std::cout << "Total Cores: " << std::thread::hardware_concurrency() << std::endl;
     std::cout << "Concurrent trials (Full Power): " << num_trials << std::endl;
