@@ -166,13 +166,12 @@ int main() {
     std::vector<int> best_clique;
     std::mutex mtx; 
 
-    // --- ★変更: PCが固まらないように、論理コア数から2つ引く ---
+    // --- すべてのコアを使用　---
     unsigned int cores = std::thread::hardware_concurrency();
-    // 最低でも1スレッドは確保、最大でもコア数-2 (余裕を持たせる)
-    const int num_trials = std::max(1u, (cores > 2 ? cores - 2 : 1));
+    const int num_trials = std::thread::hardware_concurrency();
 
-    std::cout << "Total Cores: " << cores << std::endl;
-    std::cout << "Concurrent trials (Safe Mode): " << num_trials << std::endl;
+    std::cout << "Total Cores: " << std::thread::hardware_concurrency() << std::endl;
+    std::cout << "Concurrent trials (Full Power): " << num_trials << std::endl;
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
