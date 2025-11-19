@@ -1,0 +1,44 @@
+# --- コンパイルされた実行ファイル ---
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.dylib
+
+# --- 中間ファイル（コンパイル時に勝手にできるゴミ） ---
+*.o
+*.obj
+*.lib
+*.a
+
+# --- Visual Studio Code / Editor の設定 ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# --- Windows / Mac のシステムファイル ---
+Thumbs.db
+.DS_Store
+
+# --- C++ (Visual Studio) の一時フォルダ ---
+.vs/
+Debug/
+Release/
+x64/
+x86/
+*.pdb
+*.ilk
+*.ipdb
+*.iobj
+
+# --- 論文 (LaTeX) を書く場合の中間ファイル ---
+*.aux
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
