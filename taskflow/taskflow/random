@@ -1,6 +1,7 @@
 /**
- * @file max_clique_neighborhood_parallel_v2.cpp
- * @brief 最大クリーク問題：近傍分解による並列化
+ * @file max_clique_random_neighborhood.cpp
+ * @brief 最大クリーク問題：ランダムシード近傍探索 (Hybrid approach)
+ * @details ランダムに頂点を選び、その近傍（部分グラフ）を生成して貪欲法を行う。
  */
 
 // --- ヘッダファイルのインクルード ---
@@ -15,7 +16,7 @@
 #include <sstream>
 #include <mutex>
 #include <thread>
-#include <atomic>
+#include <iomanip>
 
 #include "taskflow.hpp"
 
@@ -41,16 +42,21 @@ public:
         return adj_list_[u].count(v);
     }
 
-    // 近傍リストを返す
+    int get_degree(int u) const {
+        return (u >= 0 && u < num_vertices_) ? adj_list_[u].size() : 0;
+    }
+
+    // ★重要: 指定した頂点の「近傍（隣接している頂点）」だけを返す
+    // これが「BFSで小さな部分グラフを作る」操作に相当します
     std::vector<int> get_neighbors(int u) const {
         if (u < 0 || u >= num_vertices_) return {};
         std::vector<int> neighbors(adj_list_[u].begin(), adj_list_[u].end());
         return neighbors;
     }
 
-    // 部分集合の中での貪欲法
+    // 部分集合の中での貪欲法（次数順）
     std::vector<int> find_greedy_clique_in_subset(std::vector<int>& candidates) const {
-        // 次数順ソート（高速化のためグローバル次数利用）
+        // 部分グラフ内での有望度（元のグラフでの次数）順にソート
         std::sort(candidates.begin(), candidates.end(), [this](int a, int b) {
             return adj_list_[a].size() > adj_list_[b].size();
         });
@@ -110,13 +116,13 @@ Graph load_dimacs_graph(const std::string& filename) {
 
 // --- メイン関数 ---
 int main() {
-    // ファイル名（適宜変更してください）
     const std::string filename = "C500.9.clq"; 
+    // const std::string filename = "C2000.5.clq"; // 大きなグラフでも試せます
     
     std::cout << "Reading graph..." << std::endl;
     Graph graph = load_dimacs_graph(filename);
 
-    std::cout << "Starting parallel neighborhood search..." << std::endl;
+    std::cout << "Starting parallel RANDOM NEIGHBORHOOD search..." << std::endl;
 
     tf::Executor executor;
     tf::Taskflow taskflow;
@@ -126,27 +132,40 @@ int main() {
     
     int total_vertices = graph.get_num_vertices();
 
+    // ★試行回数
+    // ランダムなので、頂点数より多く回すことで、良いスタート地点を何度も引くチャンスを作ります。
+    // 重い場合は減らしてください。
+    const int num_trials = 100000; 
+
+    std::cout << "Trials: " << num_trials << std::endl;
+
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // ★修正箇所: for_each_index をやめて、通常のループ + emplace に変更
-    // これなら確実に動きます
-    for (int i = 0; i < total_vertices; ++i) {
-        // [&, i] で i を値としてキャプチャするのが重要です！
-        // & だけだと、ループが終わったあとの i を参照してバグります。
-        taskflow.emplace([&, i]() {
-            int u = i; // 頂点u = ループ変数のi
+    // 並列ループ生成
+    for (int i = 0; i < num_trials; ++i) {
+        taskflow.emplace([&]() {
+            // 1. ランダムな点（シード）を決める
+            // スレッドごとに乱数生成器を作るのがポイント
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dist(0, total_vertices - 1);
+            
+            int seed_vertex = dist(gen);
 
-            // 1. 頂点 u の近傍を取得（コンパクト化）
-            std::vector<int> neighbors = graph.get_neighbors(u);
+            // 2. 幅優先探索（深さ1）を行い、小さな部分グラフを作る
+            // シード頂点の近傍を取得
+            std::vector<int> subgraph_nodes = graph.get_neighbors(seed_vertex);
 
-            // 2. 近傍内だけで貪欲法
-            std::vector<int> local_clique = graph.find_greedy_clique_in_subset(neighbors);
+            // 3. その中で最大クリークを探す（貪欲法）
+            // シード頂点自体も候補に加えるか、または最後に追加する
+            // ここでは探索関数が候補リストを受け取るので、候補リストだけで探させる
+            std::vector<int> local_clique = graph.find_greedy_clique_in_subset(subgraph_nodes);
 
-            // 3. 自分自身を追加
-            local_clique.push_back(u);
+            // シード頂点は必ずその近傍全員と繋がっているので、最後に無条件で追加できる
+            local_clique.push_back(seed_vertex);
 
-            // 4. 結果更新（排他制御）
-            if (local_clique.size() > best_clique.size()) { // ロック前の軽いチェック
+            // 4. 結果更新
+            if (local_clique.size() > best_clique.size()) {
                 std::lock_guard<std::mutex> lock(mtx);
                 if (local_clique.size() > best_clique.size()) {
                     best_clique = std::move(local_clique);

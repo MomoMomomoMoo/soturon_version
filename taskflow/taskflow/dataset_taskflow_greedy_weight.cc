@@ -162,8 +162,8 @@ int main() {
     std::vector<int> best_clique;
     std::mutex mtx; 
 
-    // 全力モード
-    const int num_trials = 100000; 
+    // taskflow内で実行する試行回数
+    const int num_trials = 10000; 
 
     std::cout << "Trials: " << num_trials << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
