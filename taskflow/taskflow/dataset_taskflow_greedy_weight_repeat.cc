@@ -140,7 +140,7 @@ Graph load_dimacs_graph(const std::string& filename) {
 // --- メイン関数 ---
 int main() {
     // --- 設定 ---
-    const std::string filename = "C500.9.clq"; 
+    const std::string filename = "C2000.9.clq"; 
     const int NUM_EXPERIMENTS = 100;   // 実験を繰り返す回数（サンプル数）
     const int NUM_TRIALS_PER_RUN = 10000; // 1回の実験で行うTaskflowの試行回数
 

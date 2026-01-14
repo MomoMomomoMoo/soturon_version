@@ -145,7 +145,7 @@ int main() {
     auto total_start_time = std::chrono::high_resolution_clock::now();
 
     // --- ★変更: ファイル名を指定 ---
-    const std::string filename = "C500.9.clq";
+    const std::string filename = "C2000.5.clq";
 
     std::cout << "Reading graph file (Single Thread Baseline)..." << std::endl;
     Graph large_graph = load_dimacs_graph(filename);
